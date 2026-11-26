@@ -6,6 +6,8 @@ users = {}
 current_user = None
 STARTING_BALANCE = 10000.00
 
+POPULAR_STOCKS = ["AAPL", "MSFT", "NVDA", "AMZN", "GOOGL"]
+
 
 def register():
     print("\n--- Create Account ---")
@@ -120,10 +122,45 @@ def view_account():
             print("Unable to retrieve current market value.")
 
 
-def buy_stock():
+def popular_stocks():
+    print("\n--- Top 5 Popular Stocks ---")
+
+    available_stocks = []
+
+    for ticker in POPULAR_STOCKS:
+        price, name = get_stock_price(ticker)
+
+        if price is not None:
+            available_stocks.append(ticker)
+            print(f"{len(available_stocks)}. {name} ({ticker}) - ${price:.2f}")
+
+    if not available_stocks:
+        print("Unable to retrieve popular stocks.")
+        return
+
+    try:
+        choice = int(input("\nSelect a stock to purchase (0 to cancel): "))
+    except ValueError:
+        print("Invalid selection.")
+        return
+
+    if choice == 0:
+        return
+
+    if choice < 1 or choice > len(available_stocks):
+        print("Invalid selection.")
+        return
+
+    ticker = available_stocks[choice - 1]
+
+    buy_stock(ticker)
+
+def buy_stock(ticker=None):
     user = users[current_user]
 
-    ticker = input("\nEnter stock ticker to buy: ").upper()
+    if ticker is None:
+        ticker = input("\nEnter stock ticker to buy: ").upper()
+
     price, name = get_stock_price(ticker)
 
     if price is None:
@@ -149,11 +186,19 @@ def buy_stock():
         print("Insufficient funds.")
         return
 
-    print(f"\nYou are about to purchase {shares:.4f} shares of {ticker}.")
-    print(f"Total Cost: ${total:.2f}")
+    new_balance = user["balance"] - total
 
-    confirm = input("Are you sure you want to do this? (y/n): ").strip().lower()
+    print("\n========== PURCHASE PREVIEW ==========")
+    print(f"Stock: {name} ({ticker})")
+    print(f"Shares: {shares:.4f}")
+    print(f"Price per Share: ${price:.2f}")
+    print(f"Transaction Cost: ${total:.2f}")
+    print("--------------------------------------")
+    print(f"Current Balance: ${user['balance']:.2f}")
+    print(f"Projected Balance: ${new_balance:.2f}")
+    print("======================================")
 
+    confirm = input("\nConfirm purchase? (y/n): ").strip().lower()
     if confirm != "y":
         print("Purchase cancelled.")
         return
@@ -228,10 +273,19 @@ def sell_stock():
 
     total = shares * price
 
-    print(f"\nYou are about to sell {shares:.4f} shares of {ticker}.")
-    print(f"Total Proceeds: ${total:.2f}")
+    new_balance = user["balance"] + total
 
-    confirm = input("Are you sure you want to do this? (y/n): ").strip().lower()
+    print("\n============ SALE PREVIEW ============")
+    print(f"Stock: {name} ({ticker})")
+    print(f"Shares to Sell: {shares:.4f}")
+    print(f"Price per Share: ${price:.2f}")
+    print(f"Transaction Proceeds: ${total:.2f}")
+    print("--------------------------------------")
+    print(f"Current Balance: ${user['balance']:.2f}")
+    print(f"Projected Balance: ${new_balance:.2f}")
+    print("======================================")
+
+    confirm = input("\nConfirm sale? (y/n): ").strip().lower()
 
     if confirm != "y":
         print("Sale cancelled.")
@@ -294,16 +348,20 @@ def help_menu():
     print("   Enter the number of shares you want to purchase.")
     print("   Review the total cost and confirm your purchase.")
 
-    print("\n3. Sell Stocks")
+    print("\n3. Buy Popular Stocks")
+    print("   Select 'Buy Popular Stocks' to view the top 5 popular stocks.")
+    print("   Choose a stock from the list to purchase shares.")
+
+    print("\n4. Sell Stocks")
     print("   Select 'Sell Stock' and enter the ticker symbol.")
     print("   Enter the number of shares you want to sell.")
     print("   Review the total proceeds and confirm your sale.")
 
-    print("\n4. View Your Account")
+    print("\n5. View Your Account")
     print("   Check your available balance and current stock holdings.")
     print("   You can also view the estimated market value of your holdings.")
 
-    print("\n5. Transaction History")
+    print("\n6. Transaction History")
     print("   Review your previous stock purchases and sales.")
 
     print("\n--- Support ---")
@@ -335,11 +393,12 @@ def main():
                     print("==============================")
                     print("1. Search Stock")
                     print("2. Buy Stock")
-                    print("3. Sell Stock")
-                    print("4. View Account")
-                    print("5. Transaction History")
-                    print("6. Help")
-                    print("7. Logout")
+                    print("3. Buy Popular Stocks")
+                    print("4. Sell Stock")
+                    print("5. View Account")
+                    print("6. Transaction History")
+                    print("7. Help")
+                    print("8. Logout")
 
                     option = input("\nSelect an option: ")
 
@@ -348,14 +407,16 @@ def main():
                     elif option == "2":
                         buy_stock()
                     elif option == "3":
-                        sell_stock()
+                        popular_stocks()
                     elif option == "4":
-                        view_account()
+                        sell_stock()
                     elif option == "5":
-                        transaction_history()
+                        view_account()
                     elif option == "6":
-                        help_menu()
+                        transaction_history()
                     elif option == "7":
+                        help_menu()
+                    elif option == "8":
                         logout()
                     else:
                         print("Invalid option. Please try again.")
